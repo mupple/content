@@ -70,7 +70,7 @@ See that? Opening a database is just like any other operation — you have to "r
 
 The open request doesn't open the database or start the transaction right away. The call to the `open()` function returns an [`IDBOpenDBRequest`](/en-US/docs/Web/API/IDBOpenDBRequest) object with a result (success) or error value that you handle as an event. Most other asynchronous functions in IndexedDB do the same thing - return an [`IDBRequest`](/en-US/docs/Web/API/IDBRequest) object with the result or error. The result for the open function is an instance of an `IDBDatabase.`
 
-The second parameter to the open method is the version of the database. The version of the database determines the database schema — the object stores in the database and their structure. If the database doesn't already exist, it is created by the `open` operation, then an `onupgradeneeded` event is triggered and you create the database schema in the handler for this event. If the database does exist but you are specifying an upgraded version number, an `onupgradeneeded` event is triggered straight away, allowing you to provide an updated schema in its handler. More on this later in [Updating the version of the database](#updating_the_version_of_the_database) below, and the {{ domxref("IDBFactory.open") }} reference page.
+The second parameter to the open method is the version of the database. The version of the database determines the database schema — the object stores in the database and their structure. If the database doesn't already exist, it is created by the `open` operation, then an `upgradeneeded` event is triggered and you create the database schema in the handler for this event. If the database does exist but you are specifying an upgraded version number, an `upgradeneeded` event is triggered straight away, allowing you to provide an updated schema in its handler. More on this later in [Updating the version of the database](#updating_the_version_of_the_database) below, and the {{ domxref("IDBFactory.open") }} reference page.
 
 > **Warning:** The version number is an `unsigned long long` number, which means that it can be a very big integer. It also means that you can't use a float, otherwise it will be converted to the closest lower integer and the transaction may not start, nor the `upgradeneeded` event trigger. So for example, don't use 2.4 as a version number:
 > `var request = indexedDB.open("MyTestDatabase", 2.4); // don't do this, as the version will be rounded to 2`
@@ -123,7 +123,7 @@ One of the common possible errors when opening a database is `VER_ERR`. It indic
 
 ### Creating or updating the version of the database
 
-When you create a new database or increase the version number of an existing database (by specifying a higher version number than you did previously, when {{ anch("Opening a database") }}), the `onupgradeneeded` event will be triggered and an [IDBVersionChangeEvent](/en-US/docs/Web/API/IDBVersionChangeEvent) object will be passed to any `onversionchange` event handler set up on `request.result` (i.e., `db` in the example). In the handler for the `upgradeneeded` event, you should create the object stores needed for this version of the database:
+When you create a new database or increase the version number of an existing database (by specifying a higher version number than you did previously, when {{ anch("Opening a database") }}), the `upgradeneeded` event will be triggered and an [IDBVersionChangeEvent](/en-US/docs/Web/API/IDBVersionChangeEvent) object will be passed to any `versionchange` event handler set up on `request.result` (i.e., `db` in the example). In the handler for the `upgradeneeded` event, you should create the object stores needed for this version of the database:
 
 ```js
 // This event is only implemented in recent browsers
@@ -140,7 +140,7 @@ In this case, the database will already have the object stores from the previous
 
 Trying to create an object store with a name that already exists (or trying to delete an object store with a name that does not already exist) will throw an error.
 
-If the `onupgradeneeded` event exits successfully, the `onsuccess` handler of the open database request will then be triggered.
+If the `upgradeneeded` event exits successfully, the `onsuccess` handler of the open database request will then be triggered.
 
 ### Structuring the database
 
@@ -251,7 +251,7 @@ request.onupgradeneeded = function(event) {
 };
 ```
 
-As indicated previously, `onupgradeneeded` is the only place where you can alter the structure of the database. In it, you can create and delete object stores and build and remove indices.
+As indicated previously, the `onupgradeneeded` handler is the only place where you can alter the structure of the database. In it, you can create and delete object stores and build and remove indices.
 
 Object stores are created with a single call to `createObjectStore()`. The method takes a name of the store, and a parameter object. Even though the parameter object is optional, it is very important, because it lets you define important optional properties and refine the type of object store you want to create. In our case, we've asked for an object store named "customers" and defined a `keyPath`, which is the property that makes an individual object in the store unique. That property in this example is "ssn" since a social security number is guaranteed to be unique. "ssn" must be present on every object that is stored in the `objectStore`.
 
@@ -583,7 +583,7 @@ Please see "[IDBCursor Constants](/en-US/docs/Web/API/IDBCursor#constants)" for 
 
 ## Version changes while a web app is open in another tab
 
-When your web app changes in such a way that a version change is required for your database, you need to consider what happens if the user has the old version of your app open in one tab and then loads the new version of your app in another. When you call `open()` with a greater version than the actual version of the database, all other open databases must explicitly acknowledge the request before you can start making changes to the database (an `onblocked` event is fired until they are closed or reloaded). Here's how it works:
+When your web app changes in such a way that a version change is required for your database, you need to consider what happens if the user has the old version of your app open in one tab and then loads the new version of your app in another. When you call `open()` with a greater version than the actual version of the database, all other open databases must explicitly acknowledge the request before you can start making changes to the database (a `blocked` event is fired until they are closed or reloaded). Here's how it works:
 
 ```js
 var openReq = mozIndexedDB.open("MyTestDatabase", 2);
